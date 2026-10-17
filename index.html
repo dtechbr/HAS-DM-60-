@@ -162,33 +162,70 @@
    if(!window.pdfjsLib)throw Error('Biblioteca de PDF não carregada. Verifique sua conexão com a internet.');
    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
    const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer(),isEvalSupported:false}).promise;
-   const entries=[];let linesAll=[];
+   const linesAll=[], documentTexts=[];
    for(let p=1;p<=pdf.numPages;p++){
-    const page=await pdf.getPage(p);const ct=await page.getTextContent();const items=ct.items.filter(i=>i.str&&i.str.trim()).map(i=>({text:plain(i.str),x:i.transform[4],y:i.transform[5],w:i.width})).sort((a,b)=>b.y-a.y||a.x-b.x);
-    const buckets=[];for(const it of items){let bucket=buckets.find(z=>Math.abs(z.y-it.y)<2.2);if(!bucket){bucket={y:it.y,items:[]};buckets.push(bucket)}bucket.items.push(it)}
-    buckets.sort((a,b)=>b.y-a.y);
-    for(const [li,b] of buckets.entries()){
-      b.items.sort((a,c)=>a.x-c.x);let text='',prev=null;
-      for(const it of b.items){if(prev){const gap=it.x-(prev.x+prev.w);text+=gap>12?'    ':gap>2.6?' ':' '}text+=it.text;prev=it}
-      linesAll.push({text,page:p,line:li+1});
-    }
-    if(p%2===0)await new Promise(resolve=>setTimeout(resolve,0));
-    setProgress(p/pdf.numPages);
+     const page=await pdf.getPage(p), viewport=page.getViewport({scale:1});
+     const content=await page.getTextContent();
+     // getTextContent informa coordenadas no PDF original. Há relatórios do MV
+     // armazenados com rotação de 90 graus. Converter para coordenadas VISUAIS
+     // antes de agrupar é essencial para não juntar dezenas de nomes numa linha.
+     const items=content.items.filter(i=>i.str && i.str.trim()).map(i=>{
+       const pos=viewport.convertToViewportPoint(i.transform[4],i.transform[5]);
+       return {text:plain(i.str),x:pos[0],y:pos[1]};
+     });
+     documentTexts.push(...items.map(i=>i.text));
+     const buckets=[];
+     for(const it of items.sort((a,b)=>a.y-b.y||a.x-b.x)){
+       let bucket=buckets.find(b=>Math.abs(b.y-it.y)<=2.1);
+       if(!bucket){bucket={y:it.y,items:[]};buckets.push(bucket)}
+       bucket.items.push(it);
+     }
+     for(const [li,b] of buckets.sort((a,b)=>a.y-b.y).entries()){
+       b.items.sort((a,c)=>a.x-c.x);
+       linesAll.push({...b,page:p,line:li+1,text:b.items.map(i=>i.text).join('  ')});
+     }
+     if(p%2===0)await new Promise(resolve=>setTimeout(resolve,0));
+     setProgress(p/pdf.numPages);
    }
-   // Primeiro: linhas tabulares com cabeçalho (quando há separação recuperável).
-   const grid=linesAll.map(l=>l.text.split(/\s{3,}/));
-   const table=parseTable(grid,src,`${file.name} (PDF)`);
-   if(table.length)entries.push(...table);
-   else for(let i=0;i<linesAll.length;i++){
-      const l=linesAll[i];let r=extractGenericLine(l.text,src,`${file.name} • pág. ${l.page} linha ${l.line}`);
-      if(!r&&i+1<linesAll.length && linesAll[i+1].page===l.page){
-       // Algumas impressões quebram identificadores e nomes em duas linhas.
-       r=extractGenericLine(l.text+'    '+linesAll[i+1].text,src,`${file.name} • pág. ${l.page} linhas ${l.line}-${linesAll[i+1].line}`);
-      }
-      if(r)entries.push(r);
-    }
-   // Evita captura duplicada do mesmo paciente pela sobreposição de linhas do PDF.
-   const seen=new Set();return entries.filter(r=>{const k=[r.source,r.name,r.birth,r.cpf,r.cns].join('|');if(seen.has(k))return false;seen.add(k);return true});
+   const flat=norm(documentTexts.join(' '));
+   const hasHeader=/HIPERTENSAO ARTERIAL/.test(flat);
+   const dmHeader=/\bDIABETES\b/.test(flat);
+   const oldHeader=/CADASTRO DOMICILIAR/.test(flat);
+   const actualType=oldHeader?'old':hasHeader?'has':dmHeader?'dm':'';
+   if(actualType && actualType!==src){
+     const labels={has:'hipertensão',dm:'diabetes',old:'pessoas idosas'};
+     throw Error(`Este PDF é um relatório de ${labels[actualType]}, mas foi enviado na etapa de ${labels[src]}. Selecione o arquivo correto.`);
+   }
+   if(!actualType)throw Error('Não foi possível reconhecer o tipo de relatório do MV. Use os relatórios analíticos indicados na etapa.');
+   const entries=[];
+   const seen=new Set();
+   for(const line of linesAll){
+     // Os dois modelos oficiais possuem CNS nominal em uma coluna dedicada.
+     // É um identificador mais seguro do que tentar encontrar nomes por texto solto.
+     const matches=[...line.text.matchAll(/\b\d{15}\b/g)].map(m=>m[0]);
+     if(matches.length!==1)continue;
+     const cns=matches[0];
+     const names=line.items.filter(i=>i.x>=0 && i.x<220).map(i=>i.text)
+       .filter(t=>/[A-ZÀ-ÿ]{2}/i.test(t) && !/^\s*(?:NOME DO FAMILIAR|USU[AÁ]RIO DO SERVI[CÇ]O)\s*$/i.test(t));
+     let name=names.join(' ').replace(/\(\d{2}\).*$/,'').trim();
+     // Não transformar endereços ou campos laterais em nomes.
+     if(!name || /^(?:RUA|AVENIDA|ALAMEDA|TRAVESSA|ENDERE[CÇ]O|COMPLEMENTO|PROPRIET[AÁ]RIO)\b/i.test(name))continue;
+     const birth=oldHeader?(line.text.match(/\b\d{2}\/\d{2}\/\d{4}\b/)||[])[0]||'':'';
+     if(src==='old'&&!birth)continue;
+     const r=rowModel({name,cns,birth},src,`${file.name} • pág. ${line.page}, linha ${line.line}`);
+     if(r){const key=r.cns||[norm(r.name),r.birth,line.page].join('|');if(!seen.has(key)){entries.push(r);seen.add(key)}}
+   }
+   // Totais impressos no rodapé dos relatórios de situação de saúde.
+   // O número de domicílios do relatório de idosos NÃO é o total de pessoas.
+   if(src!=='old'){
+     const m=flat.match(src==='has'?/TOTAL DE HIPERTENSAO ARTERIAL\D{0,25}(\d{1,6})\b/:/TOTAL DE DIABETES\D{0,25}(\d{1,6})\b/);
+     if(m)entries.mvTotal=Number(m[1]);
+     if(entries.mvTotal!==undefined && entries.length!==entries.mvTotal){
+       throw Error(`Leitura incompleta: o rodapé do MV informa ${entries.mvTotal} pacientes, mas foram encontrados ${entries.length}. O arquivo não foi incluído. Atualize a página e tente novamente, ou informe a divergência.`);
+     }
+   }
+   if(!entries.length)throw Error('Nenhum paciente identificado. Confira se o PDF do MV contém texto selecionável.');
+   return entries;
  }
  async function parseFile(file,src){const low=file.name.toLowerCase();
    if(low.endsWith('.pdf'))return await parsePDF(file,src);
@@ -217,7 +254,7 @@
  async function readUploads(fileList){const src=sources[step];if(!fileList?.length)return;
    if(busy)return;busy=true;setProgress(.02);
    let ok=0,fail=[];for(const file of Array.from(fileList)){
-     try{const rows=await parseFile(file,src);store[src].push(...rows);meta[src].push({file:file.name,count:rows.length});ok++}
+     try{const rows=await parseFile(file,src);store[src].push(...rows);meta[src].push({file:file.name,count:rows.length});if(rows.mvTotal!==undefined){totals[src]=String(rows.mvTotal);$('reportedTotal').value=totals[src]}ok++}
      catch(e){fail.push(`${file.name}: ${e.message}`)}
    }
    busy=false;$('progress').classList.remove('visible');updateDataset();updateSteps();
@@ -274,7 +311,7 @@
    $('totalSummary').textContent=`${res.total} pacientes nas quatro categorias • ${res.pending.length} registro(s) com pendências • ${res.raw} linha(s) originais lida(s).`;
    const warnings=[];for(const k of sources){if(totals[k]==='')continue;const detected=new Set(store[k].map(r=>r.cpf||r.cns||(r.birth?norm(r.name)+'|'+r.birth:r.name+'|'+r.origin))).size;if(detected!==Number(totals[k]))warnings.push(`Conferência ${k==='has'?'HAS':k==='dm'?'DM':'idosos'}: o MV informa ${totals[k]} cadastros e foram identificados ${detected} registros únicos no arquivo. Verifique a leitura.`)}if(res.pending.length)warnings.push(`${res.pending.length} registro(s) requer(em) conferência. Veja a aba Pendências. Esses registros não são incluídos nas quatro categorias automáticas.`);
    if(res.collisions)warnings.push('Há possíveis homônimos com dados conflitantes.');
-   warnings.push('Sem os arquivos originais de exemplo do MV, especialmente PDFs, a extração automática deve ser conferida com os totais dos relatórios e alguns nomes de cada lista.');
+   warnings.push('A conferência nominal e dos totais do MV é recomendada antes de usar as listas para decisões assistenciais.');
    $('resultWarning').textContent=warnings.join(' ');$('resultWarning').classList.toggle('danger-note',res.pending.length>0);
    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.cat===activeTab));drawTable();
  }
