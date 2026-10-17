@@ -84,7 +84,7 @@
   const dt=new Date(Date.UTC(y,m-1,d));if(y<1880||y>new Date().getFullYear()||dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return '';
   return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
  };
- const stripName=s=>plain(String(s??'').replace(/\b\d{3}[. ]?\d{3}[. ]?\d{3}[- ]?\d{2}\b/g,' ').replace(/\b\d{15}\b/g,' ').replace(/\b\d{2}\/\d{2}\/\d{4}\b/g,' ')).replace(/^\s*(?:\d+[.)-]?\s+)?/,'').replace(/^(?:nome(?: do cidad[aã]o| do paciente)?|paciente|cidadao|cidad[aã]o)\s*[:\-]\s*/i,'').replace(/\s+(?:CPF|CNS|SEXO|M[ÃA]E|NASCIMENTO|IDADE)\s*[:\-]?.*$/i,'').trim();
+ const stripName=s=>plain(String(s??'').replace(/\b\d{3}[. ]?\d{3}[. ]?\d{3}[- ]?\d{2}\b/g,' ').replace(/\b\d{15}\b/g,' ').replace(/\b\d{2}\/\d{2}\/\d{4}\b/g,' ')).replace(/^\s*(?:\d+[.)-]?\s+)?/,'').replace(/^(?:nome(?: do cidad[aã]o| do paciente)?|paciente|cidadao|cidad[aã]o)\s*[:\-]\s*/i,'').replace(/\s+(?:CPF|CNS|SEXO|M[ÃA]E|IDADE)\s*[:\-]?.*$/i,'').replace(/\s+NASCIMENTO\s*[:\-]\s*.*$/i,'').trim();
  const badName=s=>!s||norm(s).length<5||norm(s).split(' ').filter(Boolean).length<2||/(?:RELATORIO|UNIDADE|PREFEITURA|SITUACAO|HIPERTENSAO|DIABETES|CADASTRO|EQUIPE|PERIODO|TOTAL DE|PAGINA|SECRETARIA|ID COMUM|INFORMACOES DO CADASTRO)/.test(norm(s));
  const rowModel=(o,source,origin)=>{
    let name=plain(o.name), cpf=fmtDigits(o.cpf,11), cns=fmtDigits(o.cns,15), birth=birthdate(o.birth);
