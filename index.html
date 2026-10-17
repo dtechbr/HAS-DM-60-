@@ -85,7 +85,7 @@
   return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
  };
  const stripName=s=>plain(String(s??'').replace(/\b\d{3}[. ]?\d{3}[. ]?\d{3}[- ]?\d{2}\b/g,' ').replace(/\b\d{15}\b/g,' ').replace(/\b\d{2}\/\d{2}\/\d{4}\b/g,' ')).replace(/^\s*(?:\d+[.)-]?\s+)?/,'').replace(/^(?:nome(?: do cidad[aã]o| do paciente)?|paciente|cidadao|cidad[aã]o)\s*[:\-]\s*/i,'').replace(/\s+(?:CPF|CNS|SEXO|M[ÃA]E|NASCIMENTO|IDADE)\s*[:\-]?.*$/i,'').trim();
- const badName=s=>!s||norm(s).length<5||norm(s).split(' ').filter(Boolean).length<2||/(?:RELATORIO|UNIDADE|PREFEITURA|SITUACAO|HIPERTENSAO|DIABETES|CADASTRO|NASCIMENTO|EQUIPE|PERIODO|TOTAL DE|PAGINA|SECRETARIA|ID COMUM|INFORMACOES DO CADASTRO)/.test(norm(s));
+ const badName=s=>!s||norm(s).length<5||norm(s).split(' ').filter(Boolean).length<2||/(?:RELATORIO|UNIDADE|PREFEITURA|SITUACAO|HIPERTENSAO|DIABETES|CADASTRO|EQUIPE|PERIODO|TOTAL DE|PAGINA|SECRETARIA|ID COMUM|INFORMACOES DO CADASTRO)/.test(norm(s));
  const rowModel=(o,source,origin)=>{
    let name=plain(o.name), cpf=fmtDigits(o.cpf,11), cns=fmtDigits(o.cns,15), birth=birthdate(o.birth);
    name=stripName(name);if(badName(name))return null;
@@ -208,8 +208,10 @@
      const birth=src==='old'?(line.text.match(/\b\d{2}\/\d{2}\/\d{4}\b/)||[])[0]||'':'';
      const hasAddress=src!=='old'&&line.items.some(i=>i.x>=400&&/\b(?:RUA|AVENIDA|ALAMEDA|TRAVESSA|ESTRADA|PRACA|PRAÇA|RODOVIA|SITIO|SÍTIO|FAZENDA)\b/i.test(i.text));
      const hasBirthAndSex=src==='old'&&Boolean(birth)&&line.items.some(i=>/^(?:FEMININO|MASCULINO)$/i.test(i.text));
-     // Cadastros sem CNS só são considerados quando outras colunas confirmam uma linha nominal.
-     if(matches.length!==1 && !hasAddress && !hasBirthAndSex)continue;
+     // Em HAS/DM, somente linhas com um CNS identificado entram no cruzamento.
+     // Linhas sem CNS exigem conferência e não devem inflar o total nominal.
+     if(src!=='old' && matches.length!==1)continue;
+     if(src==='old' && matches.length!==1 && !hasBirthAndSex)continue;
      const cns=matches.length===1?matches[0]:'';
      const r=rowModel({name,cns,birth},src,`${file.name} • pág. ${line.page}, linha ${line.line}`);
      if(!r)continue;
