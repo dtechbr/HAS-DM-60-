@@ -37,9 +37,8 @@
  <div class="panel">
   <div id="importPane"><div class="panel-inner">
    <div class="panel-header"><span class="header-number" id="headNum">01</span><div><h2 id="stepTitle">Relatório de hipertensos</h2><p class="sub" id="stepDescription">Primeiro, obtenha o relatório de hipertensão arterial no MV.</p></div></div>
-   <div class="filter-grid" id="filters"><div class="field"><label for="team">Equipe de referência</label><select id="team"><option value="Não informada">Selecione a equipe</option><option>071</option><option>072</option><option>076</option><option>Outra equipe</option></select></div><div class="field"><label for="closing">Data do fechamento</label><input type="date" id="closing" required></div></div>
+   <div class="filter-grid" id="filters"><div class="field"><label for="team">Equipe de referência</label><input type="text" id="team" placeholder="Digite a equipe de referência" autocomplete="off" maxlength="80"></div><div class="field"><label for="closing">Data do fechamento</label><input type="date" id="closing" required></div></div>
    <div class="guide"><div class="guide-title">Como gerar o relatório no MV SOUL</div><ol id="instructions"></ol><p class="alert-guide" id="reportTip"></p></div>
-   <div class="field" style="margin-bottom:14px;max-width:350px"><label for="reportedTotal">Total indicado no rodapé do relatório MV (opcional)</label><input id="reportedTotal" type="number" min="0" step="1" placeholder="Ex.: 240" inputmode="numeric"><div class="smallnote" style="margin-top:5px">Ajuda a conferir se todos os pacientes foram lidos corretamente.</div></div>
    <div class="drop" id="drop"><div class="upload-graphic" aria-hidden="true">📄</div><strong id="dropTitle">Selecione o relatório de hipertensos</strong><p>Arraste o arquivo para esta área ou escolha no computador.</p><input class="file-input" type="file" id="files" accept=".pdf,.xlsx,.xls,.csv,.txt,.tsv" multiple><button type="button" class="button secondary" id="choose">Escolher arquivo(s)</button></div>
    <p class="formats">Aceita PDF com texto selecionável, XLS, XLSX, CSV e TXT. Pode selecionar mais de um arquivo da mesma categoria.</p>
    <div id="progress" class="progress"><b id="progressBar"></b></div><div class="status" id="status" role="status" aria-live="polite"></div>
@@ -254,7 +253,7 @@
  async function readUploads(fileList){const src=sources[step];if(!fileList?.length)return;
    if(busy)return;busy=true;setProgress(.02);
    let ok=0,fail=[];for(const file of Array.from(fileList)){
-     try{const rows=await parseFile(file,src);store[src].push(...rows);meta[src].push({file:file.name,count:rows.length});if(rows.mvTotal!==undefined){totals[src]=String(rows.mvTotal);$('reportedTotal').value=totals[src]}ok++}
+     try{const rows=await parseFile(file,src);store[src].push(...rows);meta[src].push({file:file.name,count:rows.length});if(rows.mvTotal!==undefined){totals[src]=String(rows.mvTotal)}ok++}
      catch(e){fail.push(`${file.name}: ${e.message}`)}
    }
    busy=false;$('progress').classList.remove('visible');updateDataset();updateSteps();
@@ -265,7 +264,7 @@
  function switchStep(n){if(n<0||n>3)return;
    if(n===3 && !sources.every(k=>store[k].length>0)){showStatus('Importe ao menos um paciente reconhecido em cada um dos três relatórios antes de classificar.','warn');return}
    step=n;$('importPane').hidden=n===3;$('resultPane').hidden=n!==3;
-   if(n!==3){const cfg=config[n];$('headNum').textContent=String(n+1).padStart(2,'0');$('stepTitle').textContent=cfg.title;$('stepDescription').textContent=cfg.desc;$('dropTitle').textContent=cfg.upload;$('instructions').innerHTML=cfg.steps.map(s=>`<li>${s}</li>`).join('');$('reportTip').textContent=cfg.tip;$('reportedTotal').value=totals[sources[n]];$('prev').disabled=n===0;$('next').textContent=n===2?'Conferir resultado →':'Próxima etapa →';$('files').value='';$('pasted').value='';$('status').className='status';$('progress').classList.remove('visible');updateDataset()}
+   if(n!==3){const cfg=config[n];$('headNum').textContent=String(n+1).padStart(2,'0');$('stepTitle').textContent=cfg.title;$('stepDescription').textContent=cfg.desc;$('dropTitle').textContent=cfg.upload;$('instructions').innerHTML=cfg.steps.map(s=>`<li>${s}</li>`).join('');$('reportTip').textContent=cfg.tip;$('prev').disabled=n===0;$('next').textContent=n===2?'Conferir resultado →':'Próxima etapa →';$('files').value='';$('pasted').value='';$('status').className='status';$('progress').classList.remove('visible');updateDataset()}
    else {lastResult=classify();drawResult();}
    updateSteps();window.scrollTo({top:0,behavior:'smooth'});
  }
@@ -343,7 +342,6 @@
    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='classificacao_HAS_DM_idosos.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
  }
  $('steps').addEventListener('click',e=>{const btn=e.target.closest('[data-nav]');if(!btn)return;const n=+btn.dataset.nav;if(n===3 && !sources.every(k=>store[k].length))return;switchStep(n)});
- $('reportedTotal').addEventListener('input',e=>{totals[sources[step]]=e.target.value});
  $('choose').addEventListener('click',()=>$('files').click());$('files').addEventListener('change',e=>readUploads(e.target.files));
  const drop=$('drop');drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('dragging')});drop.addEventListener('dragleave',()=>drop.classList.remove('dragging'));drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('dragging');readUploads(e.dataTransfer.files)});
  $('clearFiles').addEventListener('click',()=>{store[sources[step]]=[];meta[sources[step]]=[];updateDataset();updateSteps();showStatus('Arquivos removidos desta etapa.','good')});
