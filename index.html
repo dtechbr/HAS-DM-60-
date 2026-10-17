@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Classificador de Cadastros | HAS, DM e Pessoas Idosas</title>
+  <style>
+    :root{--navy:#18304e;--blue:#246b9c;--pale:#edf5fc;--text:#25364a;--muted:#63758a;--line:#dbe4ec;--background:#f6f8fb;--success:#126d53;--warning:#9a5a00;--red:#a33e3e;--white:#fff}
+    *{box-sizing:border-box}html{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:15px}body{margin:0;color:var(--text);background:var(--background);line-height:1.52}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.48}.container{max-width:1040px;margin:auto;padding:0 20px}
+    .banner{background:var(--navy);color:white;padding:34px 0 32px;border-bottom:4px solid #70c0ca}.banner h1{font-size:clamp(23px,3.5vw,33px);margin:2px 0 6px;letter-spacing:-.7px;line-height:1.22}.banner p{margin:0;color:#d8e5ef;font-size:14px}.eyebrow{text-transform:uppercase;letter-spacing:2px;color:#91d3db;font-size:11px;font-weight:800;margin-bottom:7px}
+    main{padding-top:24px;padding-bottom:54px}.top-note{background:#f0f7f5;color:#235c50;border:1px solid #d5eae3;border-radius:12px;display:flex;align-items:flex-start;gap:11px;padding:14px 16px;font-size:13px;margin-bottom:22px}.top-note svg{flex-shrink:0;margin-top:2px}
+    .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:20px}.step-button{border:1px solid var(--line);border-radius:11px;background:#fff;padding:12px 8px;display:flex;align-items:center;justify-content:center;gap:9px;text-align:left;min-width:0;color:#6b7c8c}.step-button.active{border-color:#1d709e;background:#e9f4fb;color:#185f87;box-shadow:0 0 0 1px #b3d7ed inset}.step-button.done{border-color:#c8e7dc;color:#126d53;background:#f0faf6}.step-index{display:grid;place-items:center;flex-shrink:0;width:26px;height:26px;border-radius:50%;font-size:13px;font-weight:700;background:#e9edf2;color:#526579}.active .step-index{background:#1f709e;color:white}.done .step-index{background:#2b9473;color:white}.step-label{font-size:13px;font-weight:700;line-height:1.2}
+    .panel{background:white;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 30px rgba(34,50,77,.04);overflow:hidden}.panel-inner{padding:26px}.panel-header{display:flex;align-items:flex-start;gap:13px;margin-bottom:22px}.header-number{height:42px;width:42px;border-radius:11px;background:#edf5fc;color:#1e6a9a;display:grid;place-items:center;font-size:17px;font-weight:800;flex-shrink:0}.panel h2{margin:0;font-size:22px;color:var(--navy);letter-spacing:-.35px}.panel .sub{margin:4px 0 0;color:var(--muted);font-size:14px}
+    .filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}.field label{display:block;margin-bottom:7px;font-weight:700;color:#44576b;font-size:12px}.field select,.field input{border:1px solid #ccd9e4;border-radius:9px;padding:10px 12px;background:white;min-height:44px;width:100%;color:var(--text)}
+    .guide{border:1px solid #dae7f1;background:#f7fbfe;border-radius:12px;padding:18px 20px;margin-bottom:23px}.guide-title{font-size:12px;text-transform:uppercase;letter-spacing:.6px;font-weight:800;color:#2d7098;margin-bottom:12px}.guide ol{margin:0;padding-left:21px}.guide li{padding:0 0 8px 4px;font-size:14px}.guide li:last-child{padding-bottom:0}.guide code{font-family:inherit;font-weight:700;color:#183d5c;white-space:normal}.guide .alert-guide{color:#205578;font-weight:700;margin:12px 0 0;font-size:13px;border-top:1px solid #dceaf4;padding-top:10px}
+    .drop{border:2px dashed #a8c7d9;border-radius:12px;background:#fcfeff;padding:27px 20px;text-align:center;transition:.15s;position:relative}.drop.dragging{border-color:#287eab;background:#edf8ff}.upload-graphic{font-size:28px;margin-bottom:7px}.drop strong{display:block;font-size:15px}.drop p{font-size:12px;color:#6f8091;margin:5px 0 17px}.file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#226d9b;color:white;border:1px solid #226d9b;font-weight:700;border-radius:9px;padding:10px 17px;min-height:42px;text-decoration:none}.button.outline{background:white;color:#28698f;border-color:#adc8da}.button.ghost{border-color:transparent;color:#637589;background:transparent}.button.danger{border-color:#ffd1d1;color:#a43b3b;background:#fff4f4}.button.secondary{background:#e9f5fc;border-color:#d0e8f6;color:#17628e}.button:hover:not(:disabled){filter:brightness(.97)}.mini{padding:5px 10px;min-height:31px;font-size:12px}
+    .formats{margin:9px 0 0;color:#718296;font-size:12px;text-align:center}.status{margin-top:15px;border-radius:10px;padding:12px 14px;font-size:13px;display:none}.status.visible{display:block}.status.good{background:#e9f8f2;color:#17674e}.status.warn{background:#fff7e6;color:#855508}.status.error{background:#fff0f0;color:#963b3b}
+    .dataset-info{margin:16px 0 0;display:none}.dataset-info.visible{display:block}.dataset-bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#f0f7fc;border:1px solid #d6e7f3;border-radius:10px;padding:13px 15px}.dataset-bar strong{color:#1d668e}.smallnote{font-size:12px;color:#63758a}.samples{overflow:auto;margin-top:12px;max-height:300px}table{border-collapse:collapse;width:100%;font-size:12px}th{background:#f0f4f8;color:#465970;text-align:left;font-weight:750;border-bottom:1px solid var(--line);padding:10px;white-space:nowrap}td{border-bottom:1px solid #e7edf3;padding:9px 10px;vertical-align:top}tr:hover td{background:#fbfdff}.muted{color:#718093}.stack{display:grid;gap:12px}.step-footer{display:flex;gap:10px;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:18px 26px;background:#fafcfe;flex-wrap:wrap}.step-footer .right{display:flex;gap:9px}.tip{color:var(--muted);font-size:12px;margin:15px 0 0}
+    .progress{margin-top:10px;height:5px;background:#edf1f5;border-radius:9px;overflow:hidden;display:none}.progress.visible{display:block}.progress b{display:block;background:#4b9db4;height:100%;width:0%;transition:.18s}
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-top:22px;margin-bottom:19px}.metric{border:1px solid var(--line);border-radius:11px;padding:17px 12px;background:#fff;min-width:0}.metric span{display:block;font-size:12px;color:#64758a;min-height:32px;line-height:1.3}.metric strong{display:block;font-size:32px;letter-spacing:-1.6px;color:#1a4160;font-variant-numeric:tabular-nums}.metric:nth-child(1){border-top:4px solid #5979b8}.metric:nth-child(2){border-top:4px solid #2b8a78}.metric:nth-child(3){border-top:4px solid #e2a756}.metric:nth-child(4){border-top:4px solid #ac88b1}
+    .results-note{background:#f0f5fa;border-radius:9px;padding:12px 14px;font-size:13px;color:#34536d;margin:13px 0}.attention{border-left:3px solid #dcad50;background:#fff9ed;color:#7b5a20;padding:12px 15px;margin:16px 0;border-radius:0 8px 8px 0;font-size:13px}.danger-note{border-left-color:#d26767;background:#fff3f3;color:#8e4848}.tabbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:17px;margin-bottom:10px}.tab{background:#fff;color:#506780;border:1px solid #cbdce8;border-radius:8px;padding:7px 11px;font-weight:700;font-size:12px}.tab.active{color:#155c84;border-color:#247eaf;background:#ebf6ff}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:360px}.empty{color:#788699;padding:18px;text-align:center;font-size:13px}.privacy-footer{font-size:12px;color:#68788b;margin-top:16px;line-height:1.6}
+    .help-card{border:1px solid #dbe6ee;border-radius:12px;padding:16px;background:#fff;margin-top:13px}.help-card summary{cursor:pointer;color:#2a6282;font-weight:700;font-size:13px}.help-card p{font-size:13px;margin:10px 0 12px;color:#5c7184}.help-card textarea{min-height:90px;width:100%;border-radius:8px;border:1px solid #cbdbe6;padding:10px;resize:vertical}.actions-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.small-badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:800;background:#eaf2f8;color:#54718b;white-space:nowrap}
+    .technical{font-size:12px;color:#748394;margin-top:28px;text-align:center}.footer{margin-top:10px;border-top:1px solid var(--line);padding-top:16px}
+    @media(max-width:650px){.container{padding:0 12px}.banner{padding:27px 0}.panel-inner{padding:18px}.step-footer{padding:15px 18px}.steps{gap:5px}.step-button{padding:9px 4px;flex-direction:column;gap:5px;text-align:center}.step-label{font-size:10px}.cards{grid-template-columns:repeat(2,1fr)}.filter-grid{grid-template-columns:1fr}.panel h2{font-size:20px}.guide{padding:14px}}
+  </style>
+  <!-- Bibliotecas carregadas para ler PDF/Excel e gerar XLS. Nenhum arquivo é enviado a esses endereços. -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+<header class="banner"><div class="container"><div class="eyebrow">Organização de cadastros da APS</div><h1>Classificador HAS, DM e pessoas idosas</h1><p>Importe os três relatórios do MV, cruze os cadastros e exporte listas sem duplicidade.</p></div></header>
+<main class="container">
+ <div class="top-note"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg><div><strong>Processamento local, sem banco de dados.</strong> Os arquivos são lidos na memória do navegador; não são enviados ao GitHub e não ficam salvos no site. Ao atualizar ou fechar a página, a classificação será perdida. Não publique relatórios de pacientes no repositório.</div></div>
+ <nav class="steps" id="steps" aria-label="Etapas"><button class="step-button active" data-nav="0"><span class="step-index">1</span><span class="step-label">Hipertensos</span></button><button class="step-button" data-nav="1"><span class="step-index">2</span><span class="step-label">Diabéticos</span></button><button class="step-button" data-nav="2"><span class="step-index">3</span><span class="step-label">Pessoas idosas</span></button><button class="step-button" data-nav="3"><span class="step-index">4</span><span class="step-label">Resultado</span></button></nav>
+ <div class="panel">
+  <div id="importPane"><div class="panel-inner">
+   <div class="panel-header"><span class="header-number" id="headNum">01</span><div><h2 id="stepTitle">Relatório de hipertensos</h2><p class="sub" id="stepDescription">Primeiro, obtenha o relatório de hipertensão arterial no MV.</p></div></div>
+   <div class="filter-grid" id="filters"><div class="field"><label for="team">Equipe de referência</label><select id="team"><option value="Não informada">Selecione a equipe</option><option>071</option><option>072</option><option>076</option><option>Outra equipe</option></select></div><div class="field"><label for="closing">Data do fechamento</label><input type="date" id="closing" required></div></div>
+   <div class="guide"><div class="guide-title">Como gerar o relatório no MV SOUL</div><ol id="instructions"></ol><p class="alert-guide" id="reportTip"></p></div>
+   <div class="field" style="margin-bottom:14px;max-width:350px"><label for="reportedTotal">Total indicado no rodapé do relatório MV (opcional)</label><input id="reportedTotal" type="number" min="0" step="1" placeholder="Ex.: 240" inputmode="numeric"><div class="smallnote" style="margin-top:5px">Ajuda a conferir se todos os pacientes foram lidos corretamente.</div></div>
+   <div class="drop" id="drop"><div class="upload-graphic" aria-hidden="true">📄</div><strong id="dropTitle">Selecione o relatório de hipertensos</strong><p>Arraste o arquivo para esta área ou escolha no computador.</p><input class="file-input" type="file" id="files" accept=".pdf,.xlsx,.xls,.csv,.txt,.tsv" multiple><button type="button" class="button secondary" id="choose">Escolher arquivo(s)</button></div>
+   <p class="formats">Aceita PDF com texto selecionável, XLS, XLSX, CSV e TXT. Pode selecionar mais de um arquivo da mesma categoria.</p>
+   <div id="progress" class="progress"><b id="progressBar"></b></div><div class="status" id="status" role="status" aria-live="polite"></div>
+   <div class="dataset-info" id="dataset"><div class="dataset-bar"><div><strong id="fileSummary"></strong><div class="smallnote" id="fileDetails"></div></div><button id="clearFiles" class="button danger mini" type="button">Remover arquivos</button></div><div class="samples" id="preview"></div></div>
+   <details class="help-card"><summary>O PDF não foi reconhecido? Cole uma tabela ou texto do relatório</summary><p>Se o MV permitir copiar os dados do relatório, cole aqui as linhas contendo nome e CPF, CNS ou data de nascimento. Para tabelas, copie também o cabeçalho das colunas (Nome, Data de nascimento, CPF, CNS). O processamento continua local.</p><textarea id="pasted" placeholder="Nome;Data de nascimento;CPF;CNS&#10;Maria da Silva;15/08/1965;123.456.789-00;..."></textarea><div class="actions-row" style="margin-top:10px"><button type="button" class="button outline mini" id="usePasted">Ler texto colado</button><span class="smallnote">Não use o exemplo fictício como dado real.</span></div></details>
+   <p class="tip" id="tip">Confira se o relatório foi extraído com a equipe e o período corretos.</p>
+  </div><div class="step-footer"><button type="button" class="button ghost" id="prev">← Anterior</button><div class="right"><button type="button" class="button" id="next">Próxima etapa →</button></div></div></div>
+  <div id="resultPane" hidden><div class="panel-inner"><div class="panel-header"><span class="header-number">04</span><div><h2>Conferência e exportação</h2><p class="sub">Cada paciente é classificado em apenas uma das quatro listas.</p></div></div>
+   <div class="results-note" id="context"></div>
+   <div class="cards"><div class="metric"><span>Hipertensão e diabetes</span><strong id="countBoth">0</strong></div><div class="metric"><span>Somente hipertensão</span><strong id="countHas">0</strong></div><div class="metric"><span>Somente diabetes</span><strong id="countDm">0</strong></div><div class="metric"><span>Somente idosos (sem HAS/DM)</span><strong id="countOld">0</strong></div></div>
+   <div class="results-note" id="totalSummary"></div><div class="attention" id="resultWarning"></div>
+   <div class="actions-row"><button class="button" type="button" id="download">Baixar Excel (.xls)</button><button class="button outline" type="button" id="downloadCsv">Baixar CSV das quatro listas</button></div>
+   <div class="tabbar" id="tabs" role="tablist" aria-label="Prévia de categorias"><button class="tab active" data-cat="both">HAS + DM</button><button class="tab" data-cat="has">Somente HAS</button><button class="tab" data-cat="dm">Somente DM</button><button class="tab" data-cat="old">Somente idosos</button><button class="tab" data-cat="pending">Pendências</button></div><div class="table-wrap" id="resultsTable"></div>
+   <div class="privacy-footer">O cruzamento utiliza CPF e CNS quando disponíveis; sem esses dados, aceita nome completo + data de nascimento. Nomes isolados e divergências relevantes ficam em <strong>Pendências</strong>, sem serem presumidos como a mesma pessoa. A classificação depende dos registros presentes nos relatórios importados.</div>
+  </div><div class="step-footer"><button class="button ghost" type="button" id="backResults">← Revisar relatórios</button><button class="button danger mini" type="button" id="restart">Limpar tudo</button></div></div>
+ </div>
+ <div class="technical">Ferramenta estática para apoio à conferência de cadastros. A validação final deve ser feita pela equipe responsável. Bibliotecas de leitura são carregadas da internet.</div>
+</main>
+<script>
+(()=>{'use strict';
+ const $=id=>document.getElementById(id);
+ const sources=['has','dm','old'];
+ const config=[
+  {title:'Relatório de hipertensos',desc:'Primeiro, obtenha o relatório de hipertensão arterial no MV.',upload:'Selecione o relatório de hipertensos',tip:'Conferir o valor “Total de Hipertensão Arterial” no final do relatório.',steps:['Abra <code>Menu → Relatórios → E-SUS</code>.','Acesse a aba <code>Relatório do eSUS – Descontinuados</code>.','Selecione <code>Relatório E-SUS – Situação de saúde – Analítico</code>.','Filtre <strong>Unidade, equipe</strong> e a data de <strong>01/01/2019 até a data do fechamento</strong>.','Em <code>Informações do Cadastro Individual</code>, selecione <strong>Hipertensão Arterial</strong> e clique em <strong>Imprimir</strong>. Salve o relatório no computador.']},
+  {title:'Relatório de diabéticos',desc:'Agora, obtenha a relação de pessoas cadastradas com diabetes.',upload:'Selecione o relatório de diabéticos',tip:'Conferir o valor “Total de Diabetes” no final do relatório.',steps:['Abra <code>Menu → Relatórios → E-SUS</code>.','Acesse a aba <code>Relatório do eSUS – Descontinuados</code>.','Selecione <code>Relatório E-SUS – Situação de saúde – Analítico</code>.','Filtre <strong>Unidade, equipe</strong> e a data de <strong>01/01/2019 até a data do fechamento</strong>.','Em <code>Informações do Cadastro Individual</code>, selecione <strong>Diabetes</strong> e clique em <strong>Imprimir</strong>. Salve o relatório no computador.']},
+  {title:'Relatório de pessoas idosas',desc:'Por último, obtenha os cadastros de pessoas com 60 anos ou mais.',upload:'Selecione o relatório de pessoas idosas',tip:'Filtre a idade de 60 a 120 anos. A lista de idosos será comparada com as listas de HAS e DM.',steps:['Abra <code>Menu → Relatórios → E-SUS</code>.','Acesse a aba <code>Relatório do eSUS 3.0</code>.','Selecione <code>Relatório E-SUS – cadastro domiciliar – Analítico</code>.','Filtre a <strong>equipe</strong> e a data de <strong>01/01/2019 até a data do fechamento</strong>.','Em <code>Idade</code>, selecione o intervalo de <strong>60 a 120 anos</strong> e clique em <strong>Imprimir</strong>. Salve o relatório no computador.']}
+ ];
+ const store={has:[],dm:[],old:[]}, meta={has:[],dm:[],old:[]}, totals={has:'',dm:'',old:''};
+ let step=0,activeTab='both',lastResult=null, busy=false;
+ const today=new Date();$('closing').value=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
+ const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const plain=s=>String(s??'').replace(/\s+/g,' ').trim();
+ const norm=s=>plain(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9 ]/g,'').toUpperCase();
+ const digits=s=>String(s??'').replace(/\D/g,'');
+ const fmtDigits=(v,n)=>{const d=digits(v);if(!d|| /^([0-9])\1+$/.test(d))return '';return d.length===n?d:''};
+ const birthdate=v=>{
+  const s=plain(v);if(!s)return '';
+  let y,m,d, z;
+  if((z=s.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/))){d=+z[1];m=+z[2];y=+z[3]}
+  else if((z=s.match(/\b(\d{4})-(\d{2})-(\d{2})\b/))){y=+z[1];m=+z[2];d=+z[3]}
+  else if((z=s.match(/\b(\d{2})-(\d{2})-(\d{4})\b/))){d=+z[1];m=+z[2];y=+z[3]}
+  else return '';
+  const dt=new Date(Date.UTC(y,m-1,d));if(y<1880||y>new Date().getFullYear()||dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return '';
+  return `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+ };
+ const stripName=s=>plain(String(s??'').replace(/\b\d{3}[. ]?\d{3}[. ]?\d{3}[- ]?\d{2}\b/g,' ').replace(/\b\d{15}\b/g,' ').replace(/\b\d{2}\/\d{2}\/\d{4}\b/g,' ')).replace(/^\s*(?:\d+[.)-]?\s+)?/,'').replace(/^(?:nome(?: do cidad[aã]o| do paciente)?|paciente|cidadao|cidad[aã]o)\s*[:\-]\s*/i,'').replace(/\s+(?:CPF|CNS|SEXO|M[ÃA]E|NASCIMENTO|IDADE)\s*[:\-]?.*$/i,'').trim();
+ const badName=s=>!s||norm(s).length<5||norm(s).split(' ').filter(Boolean).length<2||/(?:RELATORIO|UNIDADE|PREFEITURA|SITUACAO|HIPERTENSAO|DIABETES|CADASTRO|NASCIMENTO|EQUIPE|PERIODO|TOTAL DE|PAGINA|SECRETARIA|ID COMUM|INFORMACOES DO CADASTRO)/.test(norm(s));
+ const rowModel=(o,source,origin)=>{
+   let name=plain(o.name), cpf=fmtDigits(o.cpf,11), cns=fmtDigits(o.cns,15), birth=birthdate(o.birth);
+   name=stripName(name);if(badName(name))return null;
+   const r={name,cpf,cns,birth,source,origin};
+   // Sem dado identificador, não é possível cruzar prontuários com segurança.
+   return r;
+ };
+ const cleanKey=s=>norm(s).replace(/\s+/g,'');
+ const fieldType=s=>{
+   const t=norm(s); if(/(?:NOME|PACIENTE|CIDADAO|USUARIO)/.test(t)&& !/NOME DA MAE|NOME SOCIAL|RESPONSAVEL/.test(t))return 'name';
+   if(/(?:DATA.*NASC|DT.*NASC|NASCIMENTO|DATANASC)/.test(t))return 'birth';
+   if(/\bCPF\b/.test(t))return 'cpf';
+   if(/\bCNS\b|CARTAO.*SUS|CARTAO NACIONAL/.test(t))return 'cns';
+   return '';
+ };
+ function parseTable(grid,src,label){
+  if(!Array.isArray(grid)||!grid.length)return [];
+  let header=-1, best=-1, mapping={};
+  for(let i=0;i<Math.min(60,grid.length);i++){
+   const candidate={};grid[i].forEach((v,j)=>{let f=fieldType(v);if(f && candidate[f]===undefined)candidate[f]=j});
+   const score=(candidate.name!==undefined?7:0)+(candidate.birth!==undefined?2:0)+(candidate.cpf!==undefined?3:0)+(candidate.cns!==undefined?3:0);
+   if(score>best){best=score;header=i;mapping=candidate}
+  }
+  // Se não há cabeçalho, tentar tabela simples de posições previsíveis.
+  if(mapping.name===undefined)return [];
+  const out=[];
+  for(let i=header+1;i<grid.length;i++){
+   const cells=grid[i].map(v=>plain(v));const name=cells[mapping.name]||'';
+   let cpf=mapping.cpf!==undefined?cells[mapping.cpf]||'':'';
+   let cns=mapping.cns!==undefined?cells[mapping.cns]||'':'';
+   let birth=mapping.birth!==undefined?cells[mapping.birth]||'':'';
+   if(!cpf||!cns){ for(let j=0;j<cells.length;j++){const v=digits(cells[j]);if(!cpf && v.length===11 && !/^([0-9])\1+$/.test(v))cpf=v; else if(!cns && v.length===15 && !/^([0-9])\1+$/.test(v))cns=v;}}
+   if(!birth){for(const v of cells){const b=birthdate(v);if(b){birth=b;break}}}
+   const r=rowModel({name,cpf,cns,birth},src,`${label} • linha ${i+1}`);if(r)out.push(r);
+  }
+  return out;
+ }
+ function decodeText(txt){const clean=txt.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  const first=clean.split('\n').find(x=>x.trim())||'';
+  let delimiter=';';let max=-1;for(const d of ['\t',';',',','|']){const n=first.split(d).length-1;if(n>max){max=n;delimiter=d}}
+  if(max<1)return null;
+  const rows=[];let field='',row=[],quoted=false;
+  for(let i=0;i<clean.length;i++){const ch=clean[i];
+   if(ch==='"'){if(quoted && clean[i+1]==='"'){field+='"';i++}else quoted=!quoted}
+   else if(ch===delimiter && !quoted){row.push(field);field=''}
+   else if(ch==='\n' && !quoted){row.push(field);if(row.some(c=>c.trim()))rows.push(row);field='';row=[]}
+   else field+=ch;
+  }
+  row.push(field);if(row.some(c=>c.trim()))rows.push(row);
+  return rows;
+ }
+ function extractGenericLine(txt,src,origin){
+   let s=plain(txt);const cpf=(s.match(/\b\d{3}[. ]?\d{3}[. ]?\d{3}[- ]?\d{2}\b/)||[])[0]||'';
+   const cns=(s.match(/\b\d{15}\b/)||[])[0]||'';
+   const bd=(s.match(/\b\d{2}\/\d{2}\/\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/)||[])[0]||'';
+   if(!cpf&&!cns&&!bd)return null;
+   const segments=s.split(/\s{2,}|\s*[|;\t]\s*/).map(x=>x.trim()).filter(Boolean);
+   const candidates=segments.map(x=>stripName(x)).filter(x=>!badName(x) && !/\d/.test(x));
+   let name=candidates.sort((a,b)=>b.length-a.length)[0]||'';
+   if(!name){
+     const remainder=stripName(s.replace(/\b\d{1,3}[.,]\d{1,3}[.,]\d{1,3}\b/g,' '));
+     const matcher=remainder.match(/[A-ZÀ-Ü][a-zA-ZÀ-ÿ'´`-]+(?:\s+[a-zA-ZÀ-ÿ'´`-]+){1,8}/g)||[];
+     name=matcher.sort((a,b)=>b.length-a.length).find(x=>!badName(x))||'';
+   }
+   return rowModel({name,cpf,cns,birth:bd},src,origin);
+ }
+ function parseText(txt,src,label){
+   const grid=decodeText(txt);let list=grid?parseTable(grid,src,label):[];
+   if(list.length)return list;
+   return txt.split(/\r?\n/).map((line,i)=>extractGenericLine(line,src,`${label} • linha ${i+1}`)).filter(Boolean);
+ }
+ async function parsePDF(file,src){
+   if(!window.pdfjsLib)throw Error('Biblioteca de PDF não carregada. Verifique sua conexão com a internet.');
+   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+   const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer(),isEvalSupported:false}).promise;
+   const entries=[];let linesAll=[];
+   for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);const ct=await page.getTextContent();const items=ct.items.filter(i=>i.str&&i.str.trim()).map(i=>({text:plain(i.str),x:i.transform[4],y:i.transform[5],w:i.width})).sort((a,b)=>b.y-a.y||a.x-b.x);
+    const buckets=[];for(const it of items){let bucket=buckets.find(z=>Math.abs(z.y-it.y)<2.2);if(!bucket){bucket={y:it.y,items:[]};buckets.push(bucket)}bucket.items.push(it)}
+    buckets.sort((a,b)=>b.y-a.y);
+    for(const [li,b] of buckets.entries()){
+      b.items.sort((a,c)=>a.x-c.x);let text='',prev=null;
+      for(const it of b.items){if(prev){const gap=it.x-(prev.x+prev.w);text+=gap>12?'    ':gap>2.6?' ':' '}text+=it.text;prev=it}
+      linesAll.push({text,page:p,line:li+1});
+    }
+    if(p%2===0)await new Promise(resolve=>setTimeout(resolve,0));
+    setProgress(p/pdf.numPages);
+   }
+   // Primeiro: linhas tabulares com cabeçalho (quando há separação recuperável).
+   const grid=linesAll.map(l=>l.text.split(/\s{3,}/));
+   const table=parseTable(grid,src,`${file.name} (PDF)`);
+   if(table.length)entries.push(...table);
+   else for(let i=0;i<linesAll.length;i++){
+      const l=linesAll[i];let r=extractGenericLine(l.text,src,`${file.name} • pág. ${l.page} linha ${l.line}`);
+      if(!r&&i+1<linesAll.length && linesAll[i+1].page===l.page){
+       // Algumas impressões quebram identificadores e nomes em duas linhas.
+       r=extractGenericLine(l.text+'    '+linesAll[i+1].text,src,`${file.name} • pág. ${l.page} linhas ${l.line}-${linesAll[i+1].line}`);
+      }
+      if(r)entries.push(r);
+    }
+   // Evita captura duplicada do mesmo paciente pela sobreposição de linhas do PDF.
+   const seen=new Set();return entries.filter(r=>{const k=[r.source,r.name,r.birth,r.cpf,r.cns].join('|');if(seen.has(k))return false;seen.add(k);return true});
+ }
+ async function parseFile(file,src){const low=file.name.toLowerCase();
+   if(low.endsWith('.pdf'))return await parsePDF(file,src);
+   if(low.endsWith('.xls')||low.endsWith('.xlsx')){
+     if(!window.XLSX)throw Error('Biblioteca de Excel não carregada. Verifique sua conexão com a internet.');
+     const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:false});let output=[];
+     for(const sheet of wb.SheetNames){const grid=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,defval:'',raw:false,blankrows:false});output.push(...parseTable(grid,src,`${file.name} • ${sheet}`))}
+     return output;
+   }
+   if(/\.(?:csv|txt|tsv)$/.test(low))return parseText(await file.text(),src,file.name);
+   throw Error('Formato não suportado. Escolha PDF, Excel, CSV ou TXT.');
+ }
+ function showStatus(message,kind='good'){const el=$('status');el.className=`status visible ${kind}`;el.textContent=message}
+ function setProgress(r){$('progress').classList.add('visible');$('progressBar').style.width=Math.min(100,Math.round(r*100))+'%'}
+ function updateDataset(){let key=sources[step],arr=store[key],files=meta[key];$('dataset').classList.toggle('visible',files.length>0);
+   $('fileSummary').textContent=`${arr.length} linha(s) de pacientes identificada(s)`;
+   $('fileDetails').textContent=files.map(x=>`${x.file}: ${x.count} registros`).join(' · ');
+   $('preview').innerHTML=arr.length?tableHTML(arr.slice(0,8),false):'<div class="empty">Não foram identificados registros. Confira se o PDF contém texto selecionável e se há dados nominais, ou use a opção de colar uma tabela.</div>';
+ }
+ function tableHTML(rows,showSource=true){let head=['Nome','Nascimento','CPF','CNS'];if(showSource)head.push('Relatórios');
+   return '<table><thead><tr>'+head.map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>{
+    const vals=[r.name||'—',r.birth||'—',r.cpf||'—',r.cns||'—'];if(showSource)vals.push(r.sourcesText||r.source||'—');
+    return '<tr>'+vals.map(v=>`<td>${escapeHTML(v)}</td>`).join('')+'</tr>';
+   }).join('')+'</tbody></table>';
+ }
+ async function readUploads(fileList){const src=sources[step];if(!fileList?.length)return;
+   if(busy)return;busy=true;setProgress(.02);
+   let ok=0,fail=[];for(const file of Array.from(fileList)){
+     try{const rows=await parseFile(file,src);store[src].push(...rows);meta[src].push({file:file.name,count:rows.length});ok++}
+     catch(e){fail.push(`${file.name}: ${e.message}`)}
+   }
+   busy=false;$('progress').classList.remove('visible');updateDataset();updateSteps();
+   if(fail.length)showStatus(fail.join(' | '),'error');
+   else if(!store[src].length)showStatus('Nenhum paciente identificado automaticamente. Os relatórios do MV podem ter uma disposição específica; será necessário ajustar a leitura a partir de um arquivo de exemplo.','warn');
+   else showStatus(`${ok} arquivo(s) processado(s). Confira a amostra abaixo antes de avançar.`, 'good');
+ }
+ function switchStep(n){if(n<0||n>3)return;
+   if(n===3 && !sources.every(k=>store[k].length>0)){showStatus('Importe ao menos um paciente reconhecido em cada um dos três relatórios antes de classificar.','warn');return}
+   step=n;$('importPane').hidden=n===3;$('resultPane').hidden=n!==3;
+   if(n!==3){const cfg=config[n];$('headNum').textContent=String(n+1).padStart(2,'0');$('stepTitle').textContent=cfg.title;$('stepDescription').textContent=cfg.desc;$('dropTitle').textContent=cfg.upload;$('instructions').innerHTML=cfg.steps.map(s=>`<li>${s}</li>`).join('');$('reportTip').textContent=cfg.tip;$('reportedTotal').value=totals[sources[n]];$('prev').disabled=n===0;$('next').textContent=n===2?'Conferir resultado →':'Próxima etapa →';$('files').value='';$('pasted').value='';$('status').className='status';$('progress').classList.remove('visible');updateDataset()}
+   else {lastResult=classify();drawResult();}
+   updateSteps();window.scrollTo({top:0,behavior:'smooth'});
+ }
+ function updateSteps(){document.querySelectorAll('.step-button').forEach((el,i)=>{el.className='step-button'+(i===step?' active':i<3&&store[sources[i]].length?' done':'')});}
+ // Agrupamento por identidade: CPF/CNS têm prioridade; nome + nascimento é usado somente quando não há conflito entre IDs.
+ function classify(){const all=sources.flatMap(k=>store[k]);const n=all.length;
+   const parent=Array.from({length:n},(_,i)=>i),rank=Array(n).fill(0);
+   const root=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i]}return i};
+   const merge=(a,b)=>{a=root(a);b=root(b);if(a===b)return;if(rank[a]<rank[b])[a,b]=[b,a];parent[b]=a;if(rank[a]===rank[b])rank[a]++};
+   const cpfMap=new Map(),cnsMap=new Map(),ndMap=new Map();
+   for(let i=0;i<n;i++){const r=all[i];for(const [key,map] of [[r.cpf,cpfMap],[r.cns,cnsMap]]){if(key){if(map.has(key))merge(i,map.get(key));else map.set(key,i)}}}
+   // Evitar fusão de dois CPF/CNS distintos através de coincidência de nome + nascimento.
+   const ndGroups=new Map();for(let i=0;i<n;i++){const r=all[i];if(!r.name||!r.birth)continue;const k=norm(r.name)+'|'+r.birth;if(!ndGroups.has(k))ndGroups.set(k,[]);ndGroups.get(k).push(i)}
+   const collisions=[];
+   for(const [k,arr] of ndGroups){const cpfs=new Set(arr.map(i=>all[i].cpf).filter(Boolean)),cnss=new Set(arr.map(i=>all[i].cns).filter(Boolean));
+     if(cpfs.size>1||cnss.size>1){collisions.push({key:k,rows:arr});continue}
+     for(let j=1;j<arr.length;j++)merge(arr[0],arr[j]);
+   }
+   const clusters=new Map();for(let i=0;i<n;i++){const r=root(i);if(!clusters.has(r))clusters.set(r,[]);clusters.get(r).push(all[i]);}
+   const result={both:[],has:[],dm:[],old:[],pending:[],raw:n,collisions:collisions.length,repeats:n-clusters.size};
+   const sourceName={has:'HAS',dm:'DM',old:'Pessoa idosa'};
+   const collisionIndexes=new Set(collisions.flatMap(c=>c.rows.map(i=>root(i))));
+   for(const [group,rows] of clusters){
+    const richest=[...rows].sort((a,b)=> (Boolean(b.cpf)*4+Boolean(b.cns)*4+Boolean(b.birth)*2+b.name.length/100)-(Boolean(a.cpf)*4+Boolean(a.cns)*4+Boolean(a.birth)*2+a.name.length/100))[0];
+    const sourceSet=new Set(rows.map(r=>r.source));const cpfs=new Set(rows.map(r=>r.cpf).filter(Boolean)),cnss=new Set(rows.map(r=>r.cns).filter(Boolean));
+    const births=new Set(rows.map(r=>r.birth).filter(Boolean));const names=new Set(rows.map(r=>norm(r.name)));const hasReliableKey=[...cpfs,...cnss].length>0||rows.some(r=>r.name && r.birth);
+    const p={name:richest.name,cpf:richest.cpf||[...cpfs][0]||'',cns:richest.cns||[...cnss][0]||'',birth:richest.birth||[...births][0]||'',sourcesText:[...sourceSet].map(s=>sourceName[s]).join(' + '),origin:[...new Set(rows.map(r=>r.origin))].join('; '),duplicates:rows.length};
+    const issues=[];
+    if(!hasReliableKey)issues.push('Sem CPF/CNS e sem data de nascimento para cruzamento seguro');
+    if(collisionIndexes.has(group))issues.push('Mesmo nome e nascimento com identificadores diferentes');
+    if(cpfs.size>1||cnss.size>1||births.size>1)issues.push('Dados identificadores divergentes entre relatórios');
+    if(issues.length){result.pending.push({...p,reason:issues.join('; ')});continue;}
+    const cat=sourceSet.has('has')&&sourceSet.has('dm')?'both':sourceSet.has('has')?'has':sourceSet.has('dm')?'dm':'old';result[cat].push(p);
+   }
+   // Documentar casos de homônimos com identificadores diferentes sem excluir pessoas bem identificadas.
+   for(const x of collisions){for(const i of x.rows){const r=all[i];if(!result.pending.some(p=>p.origin.includes(r.origin))){result.pending.push({...r,sourcesText:sourceName[r.source],reason:'Conferir homônimo: mesmo nome e nascimento, CPF/CNS distintos'})}}}
+   for(const category of ['both','has','dm','old','pending'])result[category].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+   result.total=['both','has','dm','old'].reduce((s,k)=>s+result[k].length,0);return result;
+ }
+ function drawResult(){const res=lastResult;
+   $('context').textContent=`Equipe: ${$('team').value}  •  Data do fechamento: ${dateBR($('closing').value)}  •  Relatórios: HAS (${store.has.length} linhas), DM (${store.dm.length} linhas), idosos (${store.old.length} linhas).`;
+   $('countBoth').textContent=res.both.length;$('countHas').textContent=res.has.length;$('countDm').textContent=res.dm.length;$('countOld').textContent=res.old.length;
+   $('totalSummary').textContent=`${res.total} pacientes nas quatro categorias • ${res.pending.length} registro(s) com pendências • ${res.raw} linha(s) originais lida(s).`;
+   const warnings=[];for(const k of sources){if(totals[k]==='')continue;const detected=new Set(store[k].map(r=>r.cpf||r.cns||(r.birth?norm(r.name)+'|'+r.birth:r.name+'|'+r.origin))).size;if(detected!==Number(totals[k]))warnings.push(`Conferência ${k==='has'?'HAS':k==='dm'?'DM':'idosos'}: o MV informa ${totals[k]} cadastros e foram identificados ${detected} registros únicos no arquivo. Verifique a leitura.`)}if(res.pending.length)warnings.push(`${res.pending.length} registro(s) requer(em) conferência. Veja a aba Pendências. Esses registros não são incluídos nas quatro categorias automáticas.`);
+   if(res.collisions)warnings.push('Há possíveis homônimos com dados conflitantes.');
+   warnings.push('Sem os arquivos originais de exemplo do MV, especialmente PDFs, a extração automática deve ser conferida com os totais dos relatórios e alguns nomes de cada lista.');
+   $('resultWarning').textContent=warnings.join(' ');$('resultWarning').classList.toggle('danger-note',res.pending.length>0);
+   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.cat===activeTab));drawTable();
+ }
+ function drawTable(){const rows=lastResult[activeTab];if(!rows?.length){$('resultsTable').innerHTML='<div class="empty">Nenhum registro nesta categoria.</div>';return}
+   const label=activeTab==='pending'?'Motivo':'Relatórios';
+   $('resultsTable').innerHTML='<table><thead><tr>'+['Nome','Nascimento','CPF','CNS',label].map(x=>`<th>${x}</th>`).join('')+'</tr></thead><tbody>'+rows.slice(0,200).map(r=>'<tr>'+[r.name,r.birth||'—',r.cpf||'—',r.cns||'—',activeTab==='pending'?r.reason:r.sourcesText].map(v=>`<td>${escapeHTML(v||'—')}</td>`).join('')+'</tr>').join('')+'</tbody></table>'+(rows.length>200?`<div class="empty">Exibindo 200 de ${rows.length}. O Excel inclui todos.</div>`:'');
+ }
+ function dateBR(v){if(!v)return '—';const m=v.split('-');return m.length===3?`${m[2]}/${m[1]}/${m[0]}`:v}
+ function downloadXLS(){if(!window.XLSX){alert('Biblioteca Excel indisponível. Verifique a internet ou use a exportação CSV.');return}
+   const res=lastResult;const wb=XLSX.utils.book_new();
+   const overview=[['CLASSIFICAÇÃO DE CADASTROS – HAS / DM / PESSOAS IDOSAS'],['Equipe',$('team').value],['Data do fechamento',dateBR($('closing').value)],[],['CATEGORIA','PACIENTES'],['HAS e DM',res.both.length],['Somente HAS',res.has.length],['Somente DM',res.dm.length],['Somente idosos (sem HAS/DM)',res.old.length],['Total classificado',res.total],['Pendências (fora das quatro listas)',res.pending.length],[],['TOTAIS INFORMADOS NO MV'],['HAS',totals.has||'Não informado'],['Diabetes',totals.dm||'Não informado'],['Pessoas idosas',totals.old||'Não informado'],[],['INFORMAÇÕES'],['Cruzamento por CPF/CNS ou nome completo + data de nascimento.'],['Conferir os resultados com os relatórios originais.'],['Arquivos importados permanecem somente na memória do navegador.']];
+   const summary=XLSX.utils.aoa_to_sheet(overview);summary['!cols']=[{wch:53},{wch:23}];XLSX.utils.book_append_sheet(wb,summary,'Resumo');
+   for(const [key,title] of [['both','HAS e DM'],['has','Somente HAS'],['dm','Somente DM'],['old','Somente Idosos']]){
+     const grid=[['NOME','DATA DE NASCIMENTO','CPF','CNS','EQUIPE','RELATÓRIOS DE ORIGEM'],...res[key].map(r=>[r.name,r.birth,r.cpf,r.cns,$('team').value,r.sourcesText])];
+     const ws=XLSX.utils.aoa_to_sheet(grid);ws['!cols']=[{wch:46},{wch:23},{wch:18},{wch:21},{wch:12},{wch:30}];
+     XLSX.utils.book_append_sheet(wb,ws,title);
+   }
+   const pending=[['NOME','DATA DE NASCIMENTO','CPF','CNS','ORIGEM','MOTIVO DA CONFERÊNCIA','ARQUIVO / LINHA'],...res.pending.map(r=>[r.name,r.birth,r.cpf,r.cns,r.sourcesText,r.reason,r.origin])];
+   const ws=XLSX.utils.aoa_to_sheet(pending);ws['!cols']=[{wch:46},{wch:20},{wch:18},{wch:21},{wch:24},{wch:57},{wch:60}];XLSX.utils.book_append_sheet(wb,ws,'Pendências');
+   // BIFF8 verdadeiro, não um HTML/XML renomeado com extensão .xls.
+   const output=`classificacao_HAS_DM_idosos_${$('team').value.replace(/\s+/g,'_')}_${$('closing').value||'sem_data'}.xls`;
+   XLSX.writeFile(wb,output,{bookType:'xls',compression:false});
+ }
+ function downloadCSV(){const res=lastResult;
+   const categories=[['HAS e DM',res.both],['Somente HAS',res.has],['Somente DM',res.dm],['Somente idosos',res.old]];
+   const escapeCSV=v=>{let s=String(v??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};
+   const rows=[['CATEGORIA','NOME','NASCIMENTO','CPF','CNS','EQUIPE','FONTES'],...categories.flatMap(([n,r])=>r.map(p=>[n,p.name,p.birth,p.cpf,p.cns,$('team').value,p.sourcesText]))];
+   const blob=new Blob(['\ufeff'+rows.map(r=>r.map(escapeCSV).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='classificacao_HAS_DM_idosos.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+ }
+ $('steps').addEventListener('click',e=>{const btn=e.target.closest('[data-nav]');if(!btn)return;const n=+btn.dataset.nav;if(n===3 && !sources.every(k=>store[k].length))return;switchStep(n)});
+ $('reportedTotal').addEventListener('input',e=>{totals[sources[step]]=e.target.value});
+ $('choose').addEventListener('click',()=>$('files').click());$('files').addEventListener('change',e=>readUploads(e.target.files));
+ const drop=$('drop');drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('dragging')});drop.addEventListener('dragleave',()=>drop.classList.remove('dragging'));drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('dragging');readUploads(e.dataTransfer.files)});
+ $('clearFiles').addEventListener('click',()=>{store[sources[step]]=[];meta[sources[step]]=[];updateDataset();updateSteps();showStatus('Arquivos removidos desta etapa.','good')});
+ $('usePasted').addEventListener('click',()=>{const value=$('pasted').value;if(!value.trim()){showStatus('Cole os dados antes de continuar.','warn');return}const key=sources[step],rows=parseText(value,key,'Texto colado');if(!rows.length){showStatus('Não foi possível identificar pacientes. Inclua um cabeçalho Nome e pelo menos CPF, CNS ou data de nascimento.','warn');return}store[key].push(...rows);meta[key].push({file:'Texto colado',count:rows.length});$('pasted').value='';updateDataset();updateSteps();showStatus(`${rows.length} registros incluídos a partir do texto colado.`)});
+ $('prev').addEventListener('click',()=>switchStep(step-1));$('next').addEventListener('click',()=>{if(!store[sources[step]].length){showStatus('É necessário importar um relatório com ao menos um paciente reconhecido para avançar.','warn');return}switchStep(step+1)});
+ $('backResults').addEventListener('click',()=>switchStep(2));$('restart').addEventListener('click',()=>{if(!confirm('Limpar todos os relatórios e resultados desta sessão?'))return;for(const k of sources){store[k]=[];meta[k]=[];totals[k]=''}lastResult=null;switchStep(0)});
+ $('download').addEventListener('click',downloadXLS);$('downloadCsv').addEventListener('click',downloadCSV);
+ $('tabs').addEventListener('click',e=>{const btn=e.target.closest('[data-cat]');if(!btn)return;activeTab=btn.dataset.cat;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===btn));drawTable()});
+ switchStep(0);
+})();
+</script>
+</body>
+</html>
