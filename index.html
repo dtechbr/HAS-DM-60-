@@ -197,30 +197,47 @@
    }
    if(!actualType)throw Error('Não foi possível reconhecer o tipo de relatório do MV. Use os relatórios analíticos indicados na etapa.');
    const entries=[];
-   const seen=new Set();
+   const seen=new Map();
+   const repeated=[];
    for(const line of linesAll){
-     // Os dois modelos oficiais possuem CNS nominal em uma coluna dedicada.
-     // É um identificador mais seguro do que tentar encontrar nomes por texto solto.
      const matches=[...line.text.matchAll(/\b\d{15}\b/g)].map(m=>m[0]);
-     if(matches.length!==1)continue;
-     const cns=matches[0];
      const names=line.items.filter(i=>i.x>=0 && i.x<220).map(i=>i.text)
        .filter(t=>/[A-ZÀ-ÿ]{2}/i.test(t) && !/^\s*(?:NOME DO FAMILIAR|USU[AÁ]RIO DO SERVI[CÇ]O)\s*$/i.test(t));
-     let name=names.join(' ').replace(/\(\d{2}\).*$/,'').trim();
-     // Não transformar endereços ou campos laterais em nomes.
+     const name=names.join(' ').replace(/\(\d{2}\).*$/,'').trim();
      if(!name || /^(?:RUA|AVENIDA|ALAMEDA|TRAVESSA|ENDERE[CÇ]O|COMPLEMENTO|PROPRIET[AÁ]RIO)\b/i.test(name))continue;
-     const birth=oldHeader?(line.text.match(/\b\d{2}\/\d{2}\/\d{4}\b/)||[])[0]||'':'';
-     if(src==='old'&&!birth)continue;
+     const birth=src==='old'?(line.text.match(/\b\d{2}\/\d{2}\/\d{4}\b/)||[])[0]||'':'';
+     const hasAddress=src!=='old'&&line.items.some(i=>i.x>=400&&/\b(?:RUA|AVENIDA|ALAMEDA|TRAVESSA|ESTRADA|PRACA|PRAÇA|RODOVIA|SITIO|SÍTIO|FAZENDA)\b/i.test(i.text));
+     const hasBirthAndSex=src==='old'&&Boolean(birth)&&line.items.some(i=>/^(?:FEMININO|MASCULINO)$/i.test(i.text));
+     // Cadastros sem CNS só são considerados quando outras colunas confirmam uma linha nominal.
+     if(matches.length!==1 && !hasAddress && !hasBirthAndSex)continue;
+     const cns=matches.length===1?matches[0]:'';
      const r=rowModel({name,cns,birth},src,`${file.name} • pág. ${line.page}, linha ${line.line}`);
-     if(r){const key=r.cns||[norm(r.name),r.birth,line.page].join('|');if(!seen.has(key)){entries.push(r);seen.add(key)}}
+     if(!r)continue;
+     if(!cns)r.reviewReason=matches.length>1?'Mais de um CNS na linha, conferir o PDF original':'Cadastro sem CNS identificável no PDF';
+     const key=cns?`CNS:${cns}`:`SEM-CNS:${norm(name)}:${birth}:${line.page}:${line.line}`;
+     if(seen.has(key)){
+       const previous=seen.get(key);
+       if(norm(previous.name)===norm(r.name)){
+         repeated.push(`${r.origin} (${r.name})`);
+         continue;
+       }
+       previous.reviewReason='CNS repetido com nomes diferentes; conferir os dois cadastros';
+       r.cns='';
+       r.reviewReason='CNS repetido com nomes diferentes; conferir os dois cadastros';
+       entries.push(r);
+       continue;
+     }
+     entries.push(r);
+     seen.set(key,r);
    }
-   // Totais impressos no rodapé dos relatórios de situação de saúde.
-   // O número de domicílios do relatório de idosos NÃO é o total de pessoas.
+   // O total do MV pode contar linhas repetidas. Registrá-las separadamente,
+   // sem transformar duplicações em pacientes novos.
    if(src!=='old'){
      const m=flat.match(src==='has'?/TOTAL DE HIPERTENSAO ARTERIAL\D{0,25}(\d{1,6})\b/:/TOTAL DE DIABETES\D{0,25}(\d{1,6})\b/);
      if(m)entries.mvTotal=Number(m[1]);
-     if(entries.mvTotal!==undefined && entries.length!==entries.mvTotal){
-       throw Error(`Leitura incompleta: o rodapé do MV informa ${entries.mvTotal} pacientes, mas foram encontrados ${entries.length}. O arquivo não foi incluído. Atualize a página e tente novamente, ou informe a divergência.`);
+     if(repeated.length)entries.auditWarning=`${repeated.length} linha(s) repetida(s) com mesmo CNS e nome, não contabilizada(s) novamente.`;
+     if(entries.mvTotal!==undefined && entries.length+repeated.length!==entries.mvTotal){
+       throw Error(`Conferência pendente: o MV informa ${entries.mvTotal} registros, mas foram identificados ${entries.length} cadastro(s) e ${repeated.length} linha(s) repetida(s). O arquivo não foi incluído para evitar uma classificação incompleta. Envie o PDF original para localizar os registros que faltam.`);
      }
    }
    if(!entries.length)throw Error('Nenhum paciente identificado. Confira se o PDF do MV contém texto selecionável.');
@@ -253,13 +270,13 @@
  async function readUploads(fileList){const src=sources[step];if(!fileList?.length)return;
    if(busy)return;busy=true;setProgress(.02);
    let ok=0,fail=[];for(const file of Array.from(fileList)){
-     try{const rows=await parseFile(file,src);store[src].push(...rows);meta[src].push({file:file.name,count:rows.length});if(rows.mvTotal!==undefined){totals[src]=String(rows.mvTotal)}ok++}
+     try{const rows=await parseFile(file,src);store[src].push(...rows);meta[src].push({file:file.name,count:rows.length});if(rows.mvTotal!==undefined){totals[src]=String(rows.mvTotal)}if(rows.auditWarning){meta[src][meta[src].length-1].warning=rows.auditWarning}ok++}
      catch(e){fail.push(`${file.name}: ${e.message}`)}
    }
    busy=false;$('progress').classList.remove('visible');updateDataset();updateSteps();
    if(fail.length)showStatus(fail.join(' | '),'error');
    else if(!store[src].length)showStatus('Nenhum paciente identificado automaticamente. Os relatórios do MV podem ter uma disposição específica; será necessário ajustar a leitura a partir de um arquivo de exemplo.','warn');
-   else showStatus(`${ok} arquivo(s) processado(s). Confira a amostra abaixo antes de avançar.`, 'good');
+   else {const reviews=meta[src].filter(m=>m.warning).map(m=>m.warning);showStatus(`${ok} arquivo(s) processado(s). ${reviews.length?reviews.join(' | '):'Confira a amostra abaixo antes de avançar.'}`,reviews.length?'warn':'good')}
  }
  function switchStep(n){if(n<0||n>3)return;
    if(n===3 && !sources.every(k=>store[k].length>0)){showStatus('Importe ao menos um paciente reconhecido em cada um dos três relatórios antes de classificar.','warn');return}
@@ -294,6 +311,7 @@
     const p={name:richest.name,cpf:richest.cpf||[...cpfs][0]||'',cns:richest.cns||[...cnss][0]||'',birth:richest.birth||[...births][0]||'',sourcesText:[...sourceSet].map(s=>sourceName[s]).join(' + '),origin:[...new Set(rows.map(r=>r.origin))].join('; '),duplicates:rows.length};
     const issues=[];
     if(!hasReliableKey)issues.push('Sem CPF/CNS e sem data de nascimento para cruzamento seguro');
+    for(const motivo of new Set(rows.map(r=>r.reviewReason).filter(Boolean)))issues.push(motivo);
     if(collisionIndexes.has(group))issues.push('Mesmo nome e nascimento com identificadores diferentes');
     if(cpfs.size>1||cnss.size>1||births.size>1)issues.push('Dados identificadores divergentes entre relatórios');
     if(issues.length){result.pending.push({...p,reason:issues.join('; ')});continue;}
@@ -308,7 +326,7 @@
    $('context').textContent=`Equipe: ${$('team').value}  •  Data do fechamento: ${dateBR($('closing').value)}  •  Relatórios: HAS (${store.has.length} linhas), DM (${store.dm.length} linhas), idosos (${store.old.length} linhas).`;
    $('countBoth').textContent=res.both.length;$('countHas').textContent=res.has.length;$('countDm').textContent=res.dm.length;$('countOld').textContent=res.old.length;
    $('totalSummary').textContent=`${res.total} pacientes nas quatro categorias • ${res.pending.length} registro(s) com pendências • ${res.raw} linha(s) originais lida(s).`;
-   const warnings=[];for(const k of sources){if(totals[k]==='')continue;const detected=new Set(store[k].map(r=>r.cpf||r.cns||(r.birth?norm(r.name)+'|'+r.birth:r.name+'|'+r.origin))).size;if(detected!==Number(totals[k]))warnings.push(`Conferência ${k==='has'?'HAS':k==='dm'?'DM':'idosos'}: o MV informa ${totals[k]} cadastros e foram identificados ${detected} registros únicos no arquivo. Verifique a leitura.`)}if(res.pending.length)warnings.push(`${res.pending.length} registro(s) requer(em) conferência. Veja a aba Pendências. Esses registros não são incluídos nas quatro categorias automáticas.`);
+   const warnings=[];for(const k of sources){for(const item of meta[k])if(item.warning)warnings.push(`${item.file}: ${item.warning}`)}for(const k of sources){if(totals[k]==='')continue;const detected=new Set(store[k].map(r=>r.cpf||r.cns||(r.birth?norm(r.name)+'|'+r.birth:r.name+'|'+r.origin))).size;if(detected!==Number(totals[k]))warnings.push(`Conferência ${k==='has'?'HAS':k==='dm'?'DM':'idosos'}: o MV informa ${totals[k]} cadastros e foram identificados ${detected} registros únicos no arquivo. Verifique a leitura.`)}if(res.pending.length)warnings.push(`${res.pending.length} registro(s) requer(em) conferência. Veja a aba Pendências. Esses registros não são incluídos nas quatro categorias automáticas.`);
    if(res.collisions)warnings.push('Há possíveis homônimos com dados conflitantes.');
    warnings.push('A conferência nominal e dos totais do MV é recomendada antes de usar as listas para decisões assistenciais.');
    $('resultWarning').textContent=warnings.join(' ');$('resultWarning').classList.toggle('danger-note',res.pending.length>0);
